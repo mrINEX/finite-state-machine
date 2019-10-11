@@ -7,11 +7,10 @@ class FSM {
         if(config === undefined)
             throw new name('Error');
         this.getSt = 'normal';
-        this.historytrigger = ['normal'];
-        this.eve=[];
-        this.historydel = [];
-        this.und = 0;
-        this.red = 0;
+        this.addstate = [];
+        this.addstatetr = [];
+        this.forredo = [];
+        this.change;
     }
 
     /**
@@ -30,7 +29,9 @@ class FSM {
         if(state !== 'normal' && state !== 'hungry' && state !== 'busy' && state !=='sleeping')
             throw new eer('Error');
         else
-            {this.eve.push(state); this.historytrigger.push(this.getSt); this.getSt = state;} //this.change = this.getSt; 
+            {this.change = this.getSt;
+             this.addstatetr.push(this.getSt);
+             this.getSt = state;} //this.addstatetr.push(state); 
     }
 
     /**
@@ -38,17 +39,17 @@ class FSM {
      * @param event
      */
     trigger(event) {
-            
+        
         if(event === 'study' && this.getSt === 'normal')
-            {this.getSt = 'busy'; this.historytrigger.push('busy'); this.eve.push('study');}
+            {this.getSt = 'busy';     this.addstatetr.push('busy');}
         else if(event === 'get_tired' && this.getSt === 'busy')
-            {this.getSt = 'sleeping'; this.historytrigger.push('sleeping');this.eve.push('get_tired');}
+            {this.getSt = 'sleeping'; this.addstatetr.push('sleeping');}
         else if(event === 'get_hungry' && this.getSt === 'busy' || event === 'get_hungry' && this.getSt === 'sleeping')
-            {this.getSt = 'hungry'; this.historytrigger.push('hungry');this.eve.push('get_hungry');} ////
+            {this.getSt = 'hungry';   this.addstatetr.push('hungry');}
         else if(event === 'eat' && this.getSt === 'hungry')
-            {this.getSt = 'normal'; this.historytrigger.push('normal');this.eve.push('eat');}
+            {this.getSt = 'normal';   this.addstatetr.push('normal');}
         else if(event === 'get_up' && this.getSt === 'sleeping')
-            {this.getSt = 'normal'; this.historytrigger.push('normal');this.eve.push('get_up');}
+            {this.getSt = 'normal';   this.addstatetr.push('normal');}
         else
             throw new name('Error');
     }
@@ -90,13 +91,22 @@ class FSM {
      * @returns {Boolean}
      */
     undo() {
-        this.und += 1;
-        if(this.getSt === 'normal')
-            return false;
         
-        console.log('(undo) getSt ^: ['+this.getSt+'] his: '+this.historytrigger);
-        this.getSt = this.historytrigger[this.historytrigger.length-2];
-        console.log('(undo) getSt _: ['+this.getSt+'] his: '+this.historytrigger);
+        if(this.addstatetr.length === 0)
+            return false;
+
+            console.log('--- state[tr]: '+this.addstatetr);
+            if(this.change !== undefined)
+                {console.log('ch: '+this.change);
+                this.getSt = this.change;}
+            if(this.addstatetr[this.addstatetr.length - 1] === 'busy')
+                {this.getSt = 'normal';
+                this.forredo.push(this.addstatetr.pop());}
+            if(this.addstatetr[this.addstatetr.length - 1] === 'hungry')
+                {this.getSt = 'busy';
+                this.forredo.push(this.addstatetr.pop());}
+            
+            console.log('state[tr] ---: '+this.addstatetr);
         return true;
     }
 
@@ -106,23 +116,22 @@ class FSM {
      * @returns {Boolean}
      */
     redo() {
-        this.red += 1;
-        if(this.red === this.und)
-        {
-            console.log('(redo) getSt ^: ['+this.getSt+'] his: '+this.historytrigger);
-            this.getSt = this.historytrigger[this.historytrigger.length-1];
-            console.log('(redo) getSt _: ['+this.getSt+'] his: '+this.historytrigger);
-            return true;
-        }
-        if(this.getSt === 'normal')
+        this.addstatetr = [];
+        console.log('redo[tr] ---: '+this.addstatetr);
+        console.log('forredo ---: '+this.forredo);
+        if(this.forredo.length === 0)
             return false;
+            this.getSt = this.forredo.pop();
+            this.forredo = [];
+        return true;
     }
 
     /**
      * Clears transition history
      */
     clearHistory() {
-        this.getSt = 'normal';
+        this.addstatetr = [];
+        this.forredo = [];
     }
 }
 
